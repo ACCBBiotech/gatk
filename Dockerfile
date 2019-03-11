@@ -61,7 +61,8 @@ RUN conda env create -n gatk -f /gatk/gatkcondaenv.yml && \
     echo "source /gatk/gatk-completion.sh" >> /gatk/gatkenv.rc && \
     echo 'export KMP_AFFINITY="granularity=thread,compact,1,0"' >> /gatk/gatkenv.rc && \
     echo 'export KMP_BLOCKTIME="1"' >> /gatk/gatkenv.rc && \
-    printf  "export OMP_NUM_THREADS=\"$(grep ^cpu\\scores /proc/cpuinfo | uniq | awk '{print $4}')\"\n" >> /gatk/gatkenv.rc && \
+    printf "export OMP_NUM_THREADS=\"$(grep ^cpu\\scores /proc/cpuinfo | uniq | awk '{print $4}')\"\n" >> /gatk/gatkenv.rc && \
+    printf "export MKL_NUM_THREADS=\"$(grep ^cpu\\scores /proc/cpuinfo | uniq | awk '{print $4}')\"\n" >> /gatk/gatkenv.rc && \
     conda clean -y -all && \
     rm -rf /root/.cache/pip
 
