@@ -11,6 +11,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.stream.Collectors;
 
@@ -250,18 +251,19 @@ public class CNNScoreVariantsIntegrationTest extends CommandLineProgramTest {
         assertInfoFieldsAreClose(tempVcf, expectedVcf, GATKVCFConstants.CNN_2D_KEY);
     }
 
-    private void assertInfoFieldsAreClose(File vcf1, File vcf2, String infoKey){
-        Iterator<VariantContext> vi1 = VariantContextTestUtils.streamVcf(vcf1).collect(Collectors.toList()).iterator();
-        Iterator<VariantContext> vi2 = VariantContextTestUtils.streamVcf(vcf2).collect(Collectors.toList()).iterator();
-        while (vi1.hasNext() && vi2.hasNext()) {
-            VariantContext vc1 = vi1.next();
-            VariantContext vc2 = vi2.next();
-            double v1Score = vc1.getAttributeAsDouble(infoKey, 0.0); // Different defaults trigger failures on missing scores
-            double v2Score = vc2.getAttributeAsDouble(infoKey, EPSILON+1.0);
-            double diff = Math.abs(v1Score-v2Score);
+    private void assertInfoFieldsAreClose(File actualVcf, File expectedVcf, String infoKey){
+        Iterator<VariantContext> expectedVi = VariantContextTestUtils.streamVcf(expectedVcf).collect(Collectors.toList()).iterator();
+        Iterator<VariantContext> actualVi = VariantContextTestUtils.streamVcf(actualVcf).collect(Collectors.toList()).iterator();
+        while (expectedVi.hasNext() && actualVi.hasNext()) {
+            VariantContext expectedVc = expectedVi.next();
+            VariantContext actualVc = actualVi.next();
+            double expectedScore = expectedVc.getAttributeAsDouble(infoKey, 0.0); // Different defaults trigger failures on missing scores
+            double actualScore = actualVc.getAttributeAsDouble(infoKey, EPSILON+1.0);
+            double diff = Math.abs(expectedScore-actualScore);
             Assert.assertTrue(diff < EPSILON);
+            VariantContextTestUtils.assertVariantContextsAreEqual(actualVc, expectedVc, Collections.singletonList(infoKey));
         }
-        Assert.assertTrue(!vi1.hasNext() && !vi2.hasNext());
+        Assert.assertTrue(!expectedVi.hasNext() && !actualVi.hasNext());
     }
 
 
