@@ -284,33 +284,40 @@ public class FuncotatorIntegrationTest extends CommandLineProgramTest {
 
         return new Object[][] {
                 {
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_1,
-                        b37Reference,
-                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
-                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_1_EXPECTED_OUTPUT
-                },
-                {
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_2,
-                        b37Reference,
-                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
-                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_2_EXPECTED_OUTPUT
-                },
-                {
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG38,
+                        "/Users/jonn/Development/tmp/2aaecceb-fe3f-48cc-bdf6-a9091c24d712/problemVariants.vcf",
                         hg38Reference,
                         FuncotatorTestConstants.REFERENCE_VERSION_HG38,
-                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
+                        "/Users/jonn/Development/funcotator_dataSources.v1.6.20190124g/",
                         FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_EXPECTED_OUTPUT
                 },
-                {
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_LARGE_DATA_SET,
-                        b37Reference,
-                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
-                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
-                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_LARGE_DATA_SET_EXPECTED_OUTPUT
-                },
+//                {
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_1,
+//                        b37Reference,
+//                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
+//                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_1_EXPECTED_OUTPUT
+//                },
+//                {
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_2,
+//                        b37Reference,
+//                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
+//                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_DATA_SET_2_EXPECTED_OUTPUT
+//                },
+//                {
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG38,
+//                        hg38Reference,
+//                        FuncotatorTestConstants.REFERENCE_VERSION_HG38,
+//                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_EXPECTED_OUTPUT
+//                },
+//                {
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_LARGE_DATA_SET,
+//                        b37Reference,
+//                        FuncotatorTestConstants.REFERENCE_VERSION_HG19,
+//                        FuncotatorTestConstants.FUNCOTATOR_DATA_SOURCES_MAIN_FOLDER,
+//                        FuncotatorTestConstants.NON_TRIVIAL_DATA_VALIDATION_TEST_HG19_LARGE_DATA_SET_EXPECTED_OUTPUT
+//                },
         };
     }
 

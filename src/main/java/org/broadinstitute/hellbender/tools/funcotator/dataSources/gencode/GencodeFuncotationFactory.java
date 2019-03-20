@@ -883,16 +883,6 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                                                                           final GencodeGtfTranscriptFeature transcript) {
         final GencodeFuncotation gencodeFuncotation;
 
-        // If the alt allele is a spanning deletion or a symbolic allele, create an unknown funcotation:
-        if (altAllele.isSymbolic() || altAllele.equals(Allele.SPAN_DEL) ) {
-            return createFuncotationForSymbolicAltAllele(variant, altAllele, transcript, reference);
-        }
-
-        // If the reference allele or alternate allele contains any masked bases:
-        if ( variant.getReference().getBaseString().contains(FuncotatorConstants.MASKED_ANY_BASE_STRING) || altAllele.getBaseString().contains(FuncotatorConstants.MASKED_ANY_BASE_STRING) ) {
-            return createFuncotationForMaskedBases(variant, altAllele, transcript, reference);
-        }
-
         // TODO: check for complex INDEL and warn and skip (https://github.com/broadinstitute/gatk/issues/5411).
 
         // Find the sub-feature of transcript that contains our variant:
@@ -922,6 +912,12 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                 // we'll create the actual IGR funcotations at a higher level.
                 return null;
             }
+        }
+
+        // Make sure that we have accounted for "special" allele cases:
+        final GencodeFuncotation specialAlleleFuncotation = checkForAndCreateSpecialAlleleFuncotation(variant, altAllele, reference, transcript);
+        if ( specialAlleleFuncotation != null ) {
+            return specialAlleleFuncotation;
         }
 
         // Make sure the sub-regions in the transcript actually contain the variant:
@@ -955,6 +951,32 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
         }
 
         return gencodeFuncotation;
+    }
+
+    /**
+     * Checks the given variant alt allele for whether it's a special case.
+     * If so, will create the appropriate funcotation for that case.
+     * @param variant {@link VariantContext} for the given {@code altAllele}.
+     * @param altAllele The alternate {@link Allele} to be checked for special cases.
+     * @param reference {@link ReferenceContext} supporting the given {@code variant}.
+     * @param transcript {@link GencodeGtfTranscriptFeature} containing the given {@code variant}.
+     * @return A {@link GencodeFuncotation} for the given special case alt allele, or {@code null} if the allele is not a special case.
+     */
+    private GencodeFuncotation checkForAndCreateSpecialAlleleFuncotation(final VariantContext variant,
+                                                                         final Allele altAllele,
+                                                                         final ReferenceContext reference,
+                                                                         final GencodeGtfTranscriptFeature transcript) {
+        // If the alt allele is a spanning deletion or a symbolic allele, create an unknown funcotation:
+        if (altAllele.isSymbolic() || altAllele.equals(Allele.SPAN_DEL) ) {
+            return createFuncotationForSymbolicAltAllele(variant, altAllele, transcript, reference);
+        }
+
+        // If the reference allele or alternate allele contains any masked bases:
+        if ( variant.getReference().getBaseString().contains(FuncotatorConstants.MASKED_ANY_BASE_STRING) || altAllele.getBaseString().contains(FuncotatorConstants.MASKED_ANY_BASE_STRING) ) {
+            return createFuncotationForMaskedBases(variant, altAllele, transcript, reference);
+        }
+
+        return null;
     }
 
     /**
@@ -2398,6 +2420,12 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
      * @return A flank funcotation for the given allele
      */
     private GencodeFuncotation createFlankFuncotation(final VariantContext variant, final Allele altAllele, final GencodeGtfTranscriptFeature transcript, final GencodeGtfGeneFeature gtfFeature, final ReferenceContext reference, final GencodeFuncotation.VariantClassification flankType) {
+
+        // Create a symbolic allele funcotation for the flank type, if appropriate:
+        if (altAllele.isSymbolic() || altAllele.equals(Allele.SPAN_DEL) ) {
+            return createFuncotationForSymbolicAltAllele(variant, altAllele, transcript, reference, flankType);
+        }
+
         final GencodeFuncotationBuilder funcotationBuilder = new GencodeFuncotationBuilder();
 
         // NOTE: The reference context is ALWAYS from the + strand
@@ -2440,12 +2468,31 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
      * @param altSymbolicAllele The alternate symbolic {@link Allele} associated with this annotation.
      * @param annotationTranscript The transcript in which this variant occurs.
      * @param reference The {@link ReferenceContext} in which the given {@link Allele}s appear.
-     * @return An IGR funcotation for the given allele.
+     * @return An appropriate funcotation for the given symbolic allele.
      */
     private GencodeFuncotation createFuncotationForSymbolicAltAllele(final VariantContext variant,
                                                                      final Allele altSymbolicAllele,
                                                                      final GencodeGtfTranscriptFeature annotationTranscript,
                                                                      final ReferenceContext reference) {
+        return createFuncotationForSymbolicAltAllele( variant, altSymbolicAllele, annotationTranscript, reference, GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE );
+    }
+
+    /**
+     * Creates a {@link GencodeFuncotation} based on a given symbolic alternate {@link Allele}.
+     *
+     * Reports reference bases as if they are on the {@link Strand#POSITIVE} strand.
+     * @param variant The {@link VariantContext} associated with this annotation.
+     * @param altSymbolicAllele The alternate symbolic {@link Allele} associated with this annotation.
+     * @param annotationTranscript The transcript in which this variant occurs.
+     * @param reference The {@link ReferenceContext} in which the given {@link Allele}s appear.
+     * @param variantClassification A {@link org.broadinstitute.hellbender.tools.funcotator.dataSources.gencode.GencodeFuncotation.VariantClassification} to give to the resulting {@link GencodeFuncotation}.
+     * @return An appropriate funcotation for the given symbolic allele.
+     */
+    private GencodeFuncotation createFuncotationForSymbolicAltAllele(final VariantContext variant,
+                                                                     final Allele altSymbolicAllele,
+                                                                     final GencodeGtfTranscriptFeature annotationTranscript,
+                                                                     final ReferenceContext reference,
+                                                                     final GencodeFuncotation.VariantClassification variantClassification) {
 
         logger.warn("Cannot create complete funcotation for variant at " + variant.getContig() + ":" + variant.getStart() + "-" + variant.getEnd() + " due to alternate allele: " + altSymbolicAllele.toString());
 
@@ -2456,7 +2503,7 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
 
         final String alleleString = altSymbolicAllele.getBaseString().isEmpty() ? altSymbolicAllele.toString() : altSymbolicAllele.getBaseString();
 
-        funcotationBuilder.setVariantClassification( GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE )
+        funcotationBuilder.setVariantClassification( variantClassification )
                 .setRefAllele( variant.getReference() )
                 .setStrand(Strand.POSITIVE)
                 .setTumorSeqAllele2( alleleString )
