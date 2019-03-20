@@ -412,18 +412,9 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                 .map(f -> createFuncotationsHelper(variant, altAllele, f, referenceContext))
                 .flatMap(List::stream).collect(Collectors.toList());
 
-        // Sort the funcotations, and populate other transcripts. Note that we're guaranteed not to have any
-        // IGR funcotations at this point due to the contract of createFuncotationsHelper().
+        // Populate other transcripts.
         if (gencodeFuncotationList.size() > 0) {
-            // Get our "Best Transcript" from our list.
-            sortFuncotationsByTranscriptForOutput(gencodeFuncotationList);
             populateOtherTranscriptsMapForFuncotation(gencodeFuncotationList);
-        }
-
-        // Grab the best choice in the case of transcript selection modes other than ALL.  The selection will be the first
-        //  transcript in the list.
-        if ((this.transcriptSelectionMode != TranscriptSelectionMode.ALL) && (gencodeFuncotationList.size() > 0)) {
-            return Collections.singletonList(gencodeFuncotationList.get(0));
         }
 
         return gencodeFuncotationList;
@@ -484,7 +475,42 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
             outputFuncotations.addAll(createIgrFuncotations(variant, referenceContext));
         }
 
-        return outputFuncotations;
+        // Now determine best transcript for all alleles together:
+        // Grab the best choice in the case of transcript selection modes other than ALL.  The selection will be the first
+        //  transcript in the list.
+        if ((transcriptSelectionMode != TranscriptSelectionMode.ALL) && (outputFuncotations.size() > 0)) {
+            return getBestTranscriptFuncotations(variant, outputFuncotations);
+        }
+        else {
+            return outputFuncotations;
+        }
+    }
+
+    private List<Funcotation> getBestTranscriptFuncotations(final VariantContext variant, final List<Funcotation> outputFuncotations) {
+        final List<GencodeFuncotation> gencodeFuncotations = new ArrayList<>(outputFuncotations.size());
+        for ( final Funcotation f : outputFuncotations ) {
+            gencodeFuncotations.add( (GencodeFuncotation)f );
+        }
+
+        // Now get global-best transcript from ALL alleles:
+        // Get our "Best Transcript" from our list.
+        sortFuncotationsByTranscriptForOutput(gencodeFuncotations);
+
+        // Get the best transcript ID:
+        final String bestTx = gencodeFuncotations.get(0).getAnnotationTranscript();
+
+        // Now get the best transcript for each allele:
+        final List<Funcotation> funcotations = new ArrayList<>(variant.getAlternateAlleles().size());
+        for ( final Allele altAllele : variant.getAlternateAlleles() ) {
+            for ( final GencodeFuncotation gencodeFuncotation : gencodeFuncotations ) {
+                if ( gencodeFuncotation.getAltAllele().equals(altAllele) && gencodeFuncotation.getAnnotationTranscript().equals(bestTx) ) {
+                    funcotations.add( gencodeFuncotation );
+                    break;
+                }
+            }
+        }
+
+        return funcotations;
     }
 
     @Override
