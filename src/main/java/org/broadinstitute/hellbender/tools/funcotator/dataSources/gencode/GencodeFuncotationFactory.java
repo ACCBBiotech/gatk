@@ -412,9 +412,18 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                 .map(f -> createFuncotationsHelper(variant, altAllele, f, referenceContext))
                 .flatMap(List::stream).collect(Collectors.toList());
 
-        // Populate other transcripts.
+        // Sort the funcotations, and populate other transcripts. Note that we're guaranteed not to have any
+        // IGR funcotations at this point due to the contract of createFuncotationsHelper().
         if (gencodeFuncotationList.size() > 0) {
+            // Get our "Best Transcript" from our list.
+            sortFuncotationsByTranscriptForOutput(gencodeFuncotationList);
             populateOtherTranscriptsMapForFuncotation(gencodeFuncotationList);
+        }
+
+        // Grab the best choice in the case of transcript selection modes other than ALL.  The selection will be the first
+        // transcript in the list.
+        if ((this.transcriptSelectionMode != TranscriptSelectionMode.ALL) && (gencodeFuncotationList.size() > 0)) {
+            return Collections.singletonList(gencodeFuncotationList.get(0));
         }
 
         return gencodeFuncotationList;
@@ -475,15 +484,7 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
             outputFuncotations.addAll(createIgrFuncotations(variant, referenceContext));
         }
 
-        // Now determine best transcript for all alleles together:
-        // Grab the best choice in the case of transcript selection modes other than ALL.  The selection will be the first
-        //  transcript in the list.
-        if ((transcriptSelectionMode != TranscriptSelectionMode.ALL) && (outputFuncotations.size() > 0)) {
-            return getBestTranscriptFuncotations(variant, outputFuncotations);
-        }
-        else {
-            return outputFuncotations;
-        }
+        return outputFuncotations;
     }
 
     private List<Funcotation> getBestTranscriptFuncotations(final VariantContext variant, final List<Funcotation> outputFuncotations) {
