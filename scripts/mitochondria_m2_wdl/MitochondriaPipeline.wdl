@@ -72,17 +72,9 @@ workflow MitochondriaPipeline {
       preemptible_tries = preemptible_tries
   }
 
-  call AddOriginalAlignmentTags {
-    input:
-      input_bam = SubsetBam.output_bam,
-      input_bam_index = SubsetBam.output_bai,
-      gatk_override = gatk_override,
-      preemptible_tries = preemptible_tries
-  }
-
   call RevertSam {
     input:
-      input_bam = AddOriginalAlignmentTags.output_bam,
+      input_bam = SubsetBam.output_bam,
       preemptible_tries = preemptible_tries
   }
 
@@ -192,40 +184,6 @@ task SubsetBam {
     disks: "local-disk " + disk_size + " HDD"
     docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
     preemptible: final_preemptible_tries
-  }
-  output {
-    File output_bam = "${basename}.bam"
-    File output_bai = "${basename}.bai"
-  }
-}
-
-task AddOriginalAlignmentTags {
-  File input_bam
-  File input_bam_index
-  String basename = basename(input_bam, ".bam")
-  File? gatk_override
-
-  # runtime
-  Int? preemptible_tries
-  Int disk_size = ceil(size(input_bam, "GB")) + 20
-
-  meta {
-    description: "Adds OriginalAlignment tag (OA) and an Original Mate Contig (XM) tag."
-  }
-  command <<<
-    set -e
-
-    export GATK_LOCAL_JAR=${default="/root/gatk.jar" gatk_override}
-
-    gatk --java-options "-Xmx2500m" AddOriginalAlignmentTags \
-      -I ${input_bam} \
-      -O ${basename}.bam
-  >>>
-  runtime {
-      memory: "3 GB"
-      disks: "local-disk " + disk_size + " HDD"
-      docker: "us.gcr.io/broad-gatk/gatk:4.1.0.0"
-      preemptible: select_first([preemptible_tries, 5])
   }
   output {
     File output_bam = "${basename}.bam"
