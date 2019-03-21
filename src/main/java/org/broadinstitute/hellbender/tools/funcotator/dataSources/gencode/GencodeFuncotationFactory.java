@@ -11,7 +11,6 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.broadinstitute.hellbender.engine.FeatureContext;
 import org.broadinstitute.hellbender.engine.FeatureInput;
 import org.broadinstitute.hellbender.engine.ReferenceContext;
 import org.broadinstitute.hellbender.engine.ReferenceDataSource;
@@ -487,33 +486,6 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
         return outputFuncotations;
     }
 
-    private List<Funcotation> getBestTranscriptFuncotations(final VariantContext variant, final List<Funcotation> outputFuncotations) {
-        final List<GencodeFuncotation> gencodeFuncotations = new ArrayList<>(outputFuncotations.size());
-        for ( final Funcotation f : outputFuncotations ) {
-            gencodeFuncotations.add( (GencodeFuncotation)f );
-        }
-
-        // Now get global-best transcript from ALL alleles:
-        // Get our "Best Transcript" from our list.
-        sortFuncotationsByTranscriptForOutput(gencodeFuncotations);
-
-        // Get the best transcript ID:
-        final String bestTx = gencodeFuncotations.get(0).getAnnotationTranscript();
-
-        // Now get the best transcript for each allele:
-        final List<Funcotation> funcotations = new ArrayList<>(variant.getAlternateAlleles().size());
-        for ( final Allele altAllele : variant.getAlternateAlleles() ) {
-            for ( final GencodeFuncotation gencodeFuncotation : gencodeFuncotations ) {
-                if ( gencodeFuncotation.getAltAllele().equals(altAllele) && gencodeFuncotation.getAnnotationTranscript().equals(bestTx) ) {
-                    funcotations.add( gencodeFuncotation );
-                    break;
-                }
-            }
-        }
-
-        return funcotations;
-    }
-
     @Override
     /**
      * {@inheritDoc}
@@ -529,21 +501,20 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * We override this method to request extra padding around queries on our FeatureContext to take into account
      * the 5' and 3' flank sizes in our {@link #flankSettings}. We use the max of these two values as our
      * query padding.
-     *
-     * @param featureContext the FeatureContext to query
-     * @return Features from our FeatureInput {@link #mainSourceFileAsFeatureInput} queried from the FeatureContext
      */
     @Override
-    protected List<Feature> queryFeaturesFromFeatureContext( FeatureContext featureContext ) {
+    protected SimpleInterval transformFeatureQueryInterval(final SimpleInterval queryInterval) {
         final int queryPadding = Math.max(flankSettings.fivePrimeFlankSize, flankSettings.threePrimeFlankSize);
 
-        @SuppressWarnings("unchecked")
-        final List<Feature> queryResults = (List<Feature>)featureContext.getValues(mainSourceFileAsFeatureInput, queryPadding, queryPadding);
+        final int newStart = queryInterval.getStart() - queryPadding;
+        final int newEnd   = queryInterval.getEnd() + queryPadding;
 
-        return queryResults;
+        return new SimpleInterval( queryInterval.getContig(), newStart < 1 ? 1 : newStart, newEnd);
     }
 
     //==================================================================================================================
