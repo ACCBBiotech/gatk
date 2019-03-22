@@ -12,6 +12,7 @@ import org.broadinstitute.barclay.help.DocumentedFeature;
 import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import org.broadinstitute.hellbender.engine.*;
 import org.broadinstitute.hellbender.exceptions.GATKException;
+import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.param.ParamUtils;
@@ -121,7 +122,9 @@ public final class FilterMutectCalls extends MultiplePassVariantWalker {
         final File mutect2StatsTable = new File(statsTable == null ? drivingVariantFile + Mutect2.DEFAULT_STATS_EXTENSION : statsTable);
         filteringEngine = new Mutect2FilteringEngine(MTFAC, vcfHeader, mutect2StatsTable);
         if (!mutect2StatsTable.exists()) {
-            logger.warn("Mutect stats table " + mutect2StatsTable + " not found.  Filtering will proceed without this information.");
+            throw new UserException.CouldNotReadInputFile("Mutect stats table " + mutect2StatsTable + " not found.  When Mutect2 outputs a file calls.vcf it also creates" +
+                    " a calls.vcf" + Mutect2.DEFAULT_STATS_EXTENSION + " file.  Perhaps this file was not moved along with the vcf, or perhaps it was not delocalized from a" +
+                    " virtual machine while running in the cloud." );
         }
     }
 

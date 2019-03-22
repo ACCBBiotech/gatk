@@ -213,9 +213,6 @@ public final class Mutect2 extends AssemblyRegionWalker {
     @Argument(fullName = StandardArgumentDefinitions.OUTPUT_LONG_NAME, shortName = StandardArgumentDefinitions.OUTPUT_SHORT_NAME, doc = "File to which variants should be written")
     public File outputVCF;
 
-    @Argument(shortName = MUTECT_STATS_SHORT_NAME, doc = "Output statistics table", optional = true)
-    public String statsTable = null;
-
     private VariantContextWriter vcfWriter;
 
     private Mutect2Engine m2Engine;
@@ -305,7 +302,7 @@ public final class Mutect2 extends AssemblyRegionWalker {
 
     @Override
     public Object onTraversalSuccess() {
-        m2Engine.writeMutectStats(new File(statsTable == null ? outputVCF + DEFAULT_STATS_EXTENSION : statsTable));
+        m2Engine.writeMutectStats(new File(outputVCF + DEFAULT_STATS_EXTENSION));
 
         return "SUCCESS";
     }
