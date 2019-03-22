@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public final class OxoGReadCountsUnitTest {
+public final class OrientationBiasReadCountsUnitTest {
     @Test
     public void testUsableRead() {
         final SAMFileHeader header = ArtificialReadUtils.createArtificialSamHeader(5, 1, 10000);
@@ -43,8 +43,8 @@ public final class OxoGReadCountsUnitTest {
 
     @Test
     public void testDescriptions() {
-        Assert.assertEquals(new OxoGReadCounts().getKeyNames(), Arrays.asList(GATKVCFConstants.F1R2_KEY, GATKVCFConstants.F2R1_KEY));
-        Assert.assertEquals(new OxoGReadCounts().getDescriptions(),
+        Assert.assertEquals(new OrientationBiasReadCounts().getKeyNames(), Arrays.asList(GATKVCFConstants.F1R2_KEY, GATKVCFConstants.F2R1_KEY));
+        Assert.assertEquals(new OrientationBiasReadCounts().getDescriptions(),
                 Arrays.asList(
                         GATKVCFHeaderLines.getFormatLine(GATKVCFConstants.F1R2_KEY),
                         GATKVCFHeaderLines.getFormatLine(GATKVCFConstants.F2R1_KEY))
@@ -93,7 +93,7 @@ public final class OxoGReadCountsUnitTest {
         final VariantContext vc = pair.getLeft();
         final ReadLikelihoods<Allele> likelihoods = pair.getRight();
         final GenotypeBuilder gb = new GenotypeBuilder(g);
-        new OxoGReadCounts().annotate(null, vc, g, gb, likelihoods);
+        new OrientationBiasReadCounts().annotate(null, vc, g, gb, likelihoods);
 
         Assert.assertEquals(OrientationBiasUtils.getF1R2(gb.make()), new int[] {refF1R2, altF1R2});
 
@@ -101,7 +101,7 @@ public final class OxoGReadCountsUnitTest {
 
         //now test a no-op
         final GenotypeBuilder gb1 = new GenotypeBuilder(g);
-        new OxoGReadCounts().annotate(null, vc, null, gb1, likelihoods);  //null genotype
+        new OrientationBiasReadCounts().annotate(null, vc, null, gb1, likelihoods);  //null genotype
         Assert.assertFalse(gb1.make().hasAD());
     }
 

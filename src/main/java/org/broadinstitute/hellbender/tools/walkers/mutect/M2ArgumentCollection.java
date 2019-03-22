@@ -10,6 +10,7 @@ import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.ReadThreading
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.ReferenceConfidenceMode;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.readthreading.ReadThreadingAssembler;
 import org.broadinstitute.hellbender.tools.walkers.mutect.filtering.FilterMutectCalls;
+import org.broadinstitute.hellbender.tools.walkers.mutect.filtering.M2FiltersArgumentCollection;
 
 import java.io.File;
 import java.io.Serializable;
@@ -42,8 +43,6 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     public static final String MAX_MNP_DISTANCE_LONG_NAME = "max-mnp-distance";
     public static final String MAX_MNP_DISTANCE_SHORT_NAME = "mnp-dist";
     public static final String IGNORE_ITR_ARTIFACTS_LONG_NAME = "ignore-itr-artifacts";
-    public static final String ARTIFACT_PRIOR_TABLE_NAME = "orientation-bias-artifact-priors";
-    public static final String ANNOTATE_BASED_ON_READS_LONG_NAME = "count-reads";
     public static final String MEDIAN_AUTOSOMAL_COVERAGE_LONG_NAME = "median-autosomal-coverage";
     public static final String MITOCHONDRIA_MODE_LONG_NAME = "mitochondria-mode";
     public static final String CALLABLE_DEPTH_LONG_NAME = "callable-depth";
@@ -212,9 +211,6 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     @Argument(fullName = NORMAL_LOD_LONG_NAME, optional = true, doc = "LOD threshold for calling normal variant non-germline.")
     public double normalLod = 2.2;
 
-    @Argument(fullName = ARTIFACT_PRIOR_TABLE_NAME, optional = true, doc = "tables of prior artifact probabilities for the read orientation filter model, one per tumor sample")
-    public List<File> artifactPriorTables = new ArrayList<>();
-
     /**
      * Two or more phased substitutions separated by this distance or less are merged into MNPs.
      */
@@ -230,14 +226,6 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
      */
     @Argument(fullName= IGNORE_ITR_ARTIFACTS_LONG_NAME, doc="Turn off read transformer that clips artifacts associated with end repair insertions near inverted tandem repeats.", optional = true)
     public boolean dontClipITRArtifacts = false;
-
-    /**
-     * If set to true, count an overlapping read pair as two separate reads instead of one for {@link StrandArtifact} and {@link StrandBiasBySample} annotations,
-     * which is the correct behavior for these annotations. Note that doing so would break the independence assumption of reads and over-count the alt depth in these annotations.
-     * On the other hand it could prevent spurious false negatives that could arise if by chance one strand in overlapping pairs is dropped disproportionately
-     */
-    @Argument(fullName = ANNOTATE_BASED_ON_READS_LONG_NAME, doc = "If true, strand-based annotations use the number of reads, not fragments")
-    public boolean annotateBasedOnReads = false;
 
     /**
      * Used to model autosomal coverage when calling mitochondria. The median tends to be a more robust center statistic.

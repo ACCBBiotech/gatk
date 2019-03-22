@@ -10,11 +10,9 @@ import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import org.broadinstitute.hellbender.engine.FeatureDataSource;
 import org.broadinstitute.hellbender.testutils.ArgumentsBuilder;
 import org.broadinstitute.hellbender.tools.walkers.SplitIntervals;
-import org.broadinstitute.hellbender.tools.walkers.annotator.ReferenceBases;
 import org.broadinstitute.hellbender.tools.walkers.mutect.filtering.FilterMutectCalls;
-import org.broadinstitute.hellbender.tools.walkers.mutect.M2ArgumentCollection;
 import org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2;
-import org.broadinstitute.hellbender.utils.GATKProtectedVariantContextUtils;
+import org.broadinstitute.hellbender.tools.walkers.mutect.filtering.M2FiltersArgumentCollection;
 import org.broadinstitute.hellbender.utils.variant.GATKVCFConstants;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -99,7 +97,7 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
                 Arrays.asList(
                     "-I", hapmapBamSnippet,
                     "-R", b37_reference_20_21,
-                    "--" + M2ArgumentCollection.ARTIFACT_PRIOR_TABLE_NAME, priorTable.getAbsolutePath(),
+                    "--" + M2FiltersArgumentCollection.ARTIFACT_PRIOR_TABLE_NAME, priorTable.getAbsolutePath(),
                     "-O", unfilteredVcf.getAbsolutePath(),
                     "-bamout", bamout.getAbsolutePath()),
                 Mutect2.class.getSimpleName()));
@@ -129,18 +127,8 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
                     .filter(vc -> vc.getStart() == position).findFirst();
             Assert.assertTrue(variant.isPresent());
 
-            // Check that the correct prior was added to the format field by Mutect
-            final double prior = GATKProtectedVariantContextUtils.getAttributeAsDouble(variant.get().getGenotype(0), GATKVCFConstants.ROF_PRIOR_KEY, -1.0);
-            final String refBases = variant.get().getAttributeAsString(ReferenceBases.REFERENCE_BASES_KEY, "");
-            final String refContext = ReferenceBases.getNMiddleBases(refBases, F1R2FilterConstants.REFERENCE_CONTEXT_SIZE);
-            final ArtifactPrior ap = artifactPriorCollection.get(refContext).get();
-
-            Assert.assertEquals(prior, ap.getPi(expectedSourceOfPrior), 1e-3);
-
             // Check that the expected filters were applied
             Assert.assertTrue(variant.get().getFilters().contains(GATKVCFConstants.READ_ORIENTATION_ARTIFACT_FILTER_NAME));
-            Assert.assertEquals(GATKProtectedVariantContextUtils.getAttributeAsString(variant.get().getGenotype(0),
-                    GATKVCFConstants.ROF_TYPE_KEY, null), expectedReadOrientaiton.toString());
         }
     }
 }

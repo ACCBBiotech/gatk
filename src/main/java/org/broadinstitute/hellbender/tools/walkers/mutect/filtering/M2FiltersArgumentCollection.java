@@ -111,6 +111,7 @@ public class M2FiltersArgumentCollection {
     public static final String CONTAMINATION_TABLE_LONG_NAME = "contamination-table";
     public static final String CONTAMINATION_ESTIMATE_LONG_NAME = "contamination-estimate";
     public static final String TUMOR_SEGMENTATION_LONG_NAME = "tumor-segmentation";
+    public static final String ARTIFACT_PRIOR_TABLE_NAME = "orientation-bias-artifact-priors";
 
     private static final double DEFAULT_CONTAMINATION = 0.0;
 
@@ -122,6 +123,9 @@ public class M2FiltersArgumentCollection {
 
     @Argument(fullName = TUMOR_SEGMENTATION_LONG_NAME, doc="Tables containing tumor segments' minor allele fractions for germline hets emitted by CalculateContamination", optional = true)
     public List<File> tumorSegmentationTables = new ArrayList<>();
+
+    @Argument(fullName = M2FiltersArgumentCollection.ARTIFACT_PRIOR_TABLE_NAME, optional = true, doc = "tables of prior artifact probabilities for the read orientation filter model, one per tumor sample")
+    public List<File> readOrientationPriorTables = new ArrayList<>();
 
 
     /**

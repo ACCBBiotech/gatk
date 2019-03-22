@@ -103,6 +103,9 @@ public final class FilterMutectCalls extends MultiplePassVariantWalker {
     protected int numberOfPasses() { return NUMBER_OF_LEARNING_PASSES + 1; }
 
     @Override
+    public boolean requiresReference() { return true;}
+
+    @Override
     public void onTraversalStart() {
         final VCFHeader inputHeader = getHeaderForVariants();
         final Set<VCFHeaderLine> headerLines = inputHeader.getMetaDataInSortedOrder().stream()
@@ -136,9 +139,9 @@ public final class FilterMutectCalls extends MultiplePassVariantWalker {
                                 final int n) {
         ParamUtils.isPositiveOrZero(n, "Passes must start at the 0th pass.");
         if (n < NUMBER_OF_LEARNING_PASSES) {
-            filteringEngine.accumulateData(variant);
+            filteringEngine.accumulateData(variant, referenceContext);
         } else if (n == NUMBER_OF_LEARNING_PASSES) {
-            vcfWriter.add(filteringEngine.applyFiltersAndAccumulateOutputStats(variant));
+            vcfWriter.add(filteringEngine.applyFiltersAndAccumulateOutputStats(variant, referenceContext));
         } else {
             throw new GATKException.ShouldNeverReachHereException("This walker should never reach (zero-indexed) pass " + n);
         }

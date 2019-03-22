@@ -286,11 +286,6 @@ public final class Mutect2 extends AssemblyRegionWalker {
     public Collection<Annotation> makeVariantAnnotations(){
         final Collection<Annotation> annotations = super.makeVariantAnnotations();
 
-        if (!MTAC.artifactPriorTables.isEmpty()){
-            // Enable the annotations associated with the read orientation model
-            annotations.add(new ReadOrientationArtifact(MTAC.artifactPriorTables));
-            annotations.add(new ReferenceBases());
-        }
         if (MTAC.autosomalCoverage > 0) {
             annotations.add(new PolymorphicNuMT(MTAC.autosomalCoverage));
         }

@@ -408,6 +408,7 @@ workflow Mutect2 {
 
     call Filter {
         input:
+            ref_fasta = ref_fasta,
             gatk_override = gatk_override,
             gatk_docker = gatk_docker,
             intervals = intervals,
@@ -1124,6 +1125,7 @@ task CalculateContamination {
 task Filter {
     # inputs
     String? intervals
+    String ref_fasta
     String unfiltered_vcf
     String output_name
     Boolean compress
@@ -1155,6 +1157,7 @@ task Filter {
         export GATK_LOCAL_JAR=${default="/root/gatk.jar" gatk_override}
 
         gatk --java-options "-Xmx${command_mem}m" FilterMutectCalls -V ${unfiltered_vcf} \
+            -R ${ref_fasta} \
       	    -O ${output_vcf} \
       	    ${"--contamination-table " + contamination_table} \
       	    ${"--tumor-segmentation " + maf_segments} \
