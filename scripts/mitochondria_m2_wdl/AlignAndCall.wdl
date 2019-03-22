@@ -147,7 +147,7 @@ workflow AlignAndCall {
   call MergeStats {
     input:
       shifted_stats = CallShiftedMt.stats,
-      non_shifted_stats = CallShiftedMt.stats,
+      non_shifted_stats = CallMt.stats,
       gatk_override = gatk_override,
       preemptible_tries = preemptible_tries
   }
