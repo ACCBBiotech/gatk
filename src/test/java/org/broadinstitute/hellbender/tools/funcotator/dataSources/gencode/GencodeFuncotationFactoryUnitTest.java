@@ -2504,66 +2504,6 @@ public class GencodeFuncotationFactoryUnitTest extends GATKBaseTest {
         }
     }
 
-    @DataProvider
-    private Object[][] provideForTestCreateFuncotationsOnSymbollicAlelle() {
-        return new Object[][] {
-                {
-                    "RNF223",
-                    GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE,
-                    new VariantContextBuilder( "", "chr1",1007545, 1007545, Arrays.asList(Allele.create("A", true), Allele.NON_REF_ALLELE) ).make()
-                },
-                {
-                    "RNF223",
-                    GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE,
-                    new VariantContextBuilder( "RP4-758J18.2", "chr1",1335002, 1335002, Arrays.asList(Allele.create("G", true), Allele.NON_REF_ALLELE) ).make()
-                }
-        };
-    }
-
-    @Test(dataProvider = "provideForTestCreateFuncotationsOnSymbollicAlelle")
-    public void testCreateFuncotationsOnSymbollicAlelle(final String expectedGeneName,
-                                                 final GencodeFuncotation.VariantClassification expectedVariantClassification,
-                                                 final VariantContext variantContext) {
-
-        final ReferenceDataSource referenceDataSource = ReferenceDataSource.of( IOUtils.getPath(b37Reference) );
-
-        final SimpleInterval variantInterval = new SimpleInterval(variantContext.getContig(), variantContext.getStart(), variantContext.getEnd());
-
-        final ReferenceContext referenceContext = new ReferenceContext(referenceDataSource, variantInterval);
-
-        final FeatureInput<GencodeGtfFeature> gencodeFeatureInput = new FeatureInput<>(FuncotatorTestConstants.GENCODE_DATA_SOURCE_GTF_PATH_HG19, GencodeFuncotationFactory.DEFAULT_NAME, Collections.emptyMap());
-        final Map<FeatureInput<? extends Feature>, Class<? extends Feature>> featureInputMap = new HashMap<>();
-        featureInputMap.put(gencodeFeatureInput, GencodeGtfFeature.class);
-        final FeatureContext featureContext = FeatureContext.createFeatureContextForTesting(featureInputMap, "dummyName", variantInterval, VariantWalker.DEFAULT_DRIVING_VARIANTS_LOOKAHEAD_BASES, 0, 0, null);
-
-        // Create a factory for our funcotations:
-        try (final GencodeFuncotationFactory funcotationFactory = new GencodeFuncotationFactory(
-                IOUtils.getPath(FuncotatorTestConstants.GENCODE_DATA_SOURCE_FASTA_PATH_HG19),
-                "VERSION",
-                GencodeFuncotationFactory.DEFAULT_NAME,
-                FuncotatorArgumentDefinitions.TRANSCRIPT_SELECTION_MODE_DEFAULT_VALUE,
-                Collections.emptySet(),
-                new LinkedHashMap<>(),
-                gencodeFeatureInput,
-                new FlankSettings(5000,0),
-                false,
-                "TEST")) {
-
-            // We test against createFuncotations() rather than createFuncotationsOnVariant() here because
-            // the flanking feature relies on the query done in createFuncotations(), and we need to test
-            // that the query is padded appropriately.
-            final List<Funcotation> funcotations = funcotationFactory.createFuncotations(variantContext, referenceContext, featureContext);
-
-            // Make sure we get what we expected:
-            Assert.assertEquals(funcotations.size(), 1);
-
-            final GencodeFuncotation funcotation = (GencodeFuncotation)funcotations.get(0);
-
-            Assert.assertEquals(funcotation.getVariantClassification(), expectedVariantClassification, "Variant classification not correct:");
-            Assert.assertEquals(funcotation.getHugoSymbol(), expectedGeneName, "Gene name not correct:");
-        }
-    }
-
     @Test
     public void testRequiresFeatures() {
         Assert.assertTrue(testMuc16SnpCreateFuncotationsFuncotationFactory.requiresFeatures());
