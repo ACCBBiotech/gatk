@@ -27,9 +27,8 @@ import java.util.Optional;
 public class CollectF1R2CountsIntegrationTest extends CommandLineProgramTest {
     @Test
     public void testOnSyntheticBam() throws IOException {
-        final File refMetrics = createTempFile("ref", ".metrics");
-        final File altMetrics = createTempFile("alt", ".metrics");
-        final Path altTable = createTempPath("alt", ".table");
+        final File baseOutput = createTempFile("f1r2",".metrics");
+        final String sample = "sample1";
 
         final int numAltReads = 30;
         final int numRefReads = 70;
@@ -39,20 +38,18 @@ public class CollectF1R2CountsIntegrationTest extends CommandLineProgramTest {
         final String[] args = {
                 "-R", hg19_chr1_1M_Reference,
                 "-I", samFile.getAbsolutePath(),
-                "--" + CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, altTable.toAbsolutePath().toString(),
-                "--" + CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, refMetrics.getAbsolutePath(),
-                "--" + CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, altMetrics.getAbsolutePath()
+                "-O", baseOutput.getAbsolutePath()
         };
 
         runCommandLine(args);
 
         final MetricsFile<?, Integer> referenceSiteMetrics = new MetricsFile<>();
-        final Reader in = IOUtil.openFileForBufferedReading(refMetrics);
+        final Reader in = IOUtil.openFileForBufferedReading(new File(baseOutput.getAbsolutePath() + sample + F1R2CountsCollector.REF_HIST_EXTENSION));
         referenceSiteMetrics.read(in);
         CloserUtil.close(in);
 
         List<Histogram<Integer>> histograms = referenceSiteMetrics.getAllHistograms();
-        List<AltSiteRecord> altDesignMatrix = AltSiteRecord.readAltSiteRecords(altTable).getRight();
+        List<AltSiteRecord> altDesignMatrix = AltSiteRecord.readAltSiteRecords(new File(baseOutput.getAbsolutePath() + sample + F1R2CountsCollector.ALT_TABLE_EXTENSION).toPath()).getRight();
 
         /** Expected result
          *
@@ -148,23 +145,19 @@ public class CollectF1R2CountsIntegrationTest extends CommandLineProgramTest {
 
     @Test
     public void testHistograms() throws IOException {
-        final File refMetrics = createTempFile("ref", ".metrics");
-        final File altMetrics = createTempFile("alt", ".metrics");
-        final File altTable = createTempFile("alt", ".table");
+        final File baseOutput = createTempFile("f1r2",".metrics");
         final File sam = createSyntheticSam(30, 1);
 
         final String[] args = {
                 "-R", hg19_chr1_1M_Reference,
                 "-I", sam.getAbsolutePath(),
-                "--" + CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, altTable.getAbsolutePath(),
-                "--" + CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, refMetrics.getAbsolutePath(),
-                "--" + CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, altMetrics.getAbsolutePath()
+                "-O", baseOutput.getAbsolutePath()
         };
 
         runCommandLine(args);
 
         final MetricsFile<?, Integer> altSiteMetrics = new MetricsFile<>();
-        final Reader altMetricsReader = IOUtil.openFileForBufferedReading(altMetrics);
+        final Reader altMetricsReader = IOUtil.openFileForBufferedReading(new File(baseOutput.getAbsolutePath() + "sample1" + F1R2CountsCollector.ALT_HIST_EXTENSION));
         altSiteMetrics.read(altMetricsReader);
         CloserUtil.close(altMetricsReader);
 

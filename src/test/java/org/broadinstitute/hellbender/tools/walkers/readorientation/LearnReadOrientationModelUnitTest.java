@@ -9,26 +9,20 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LearnReadOrientationModelUnitTest extends CommandLineProgramTest {
     @Test
     public void testCombineHistograms(){
-        final File refHistTruthFile = createTempFile("ref", "metrics");
-        final File altHistTruthFile = createTempFile("alt", "metrics");
-        final File altTableTruthFile = createTempFile("alt","tsv");
-
-        final File refMetricsDir = createTempDir("rh");
-        final File altMetricsDir = createTempDir("ah");
-        final File altTableDir = createTempDir("at");
+        final File unscatteredDir = createTempDir("unscattered");
+        final File scatteredDir = createTempDir("scattered");
 
         // Step 0: Run CollectF1R2Counts without scatter-gather
         runCommandLine(Arrays.asList(
                 "-R", b37_reference_20_21,
                 "-I", ReadOrientationModelIntegrationTest.hapmapBamSnippet,
                 "-L", ReadOrientationModelIntegrationTest.intervalList,
-                "--" + CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, altTableTruthFile.getAbsolutePath(),
-                "--" + CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, refHistTruthFile.getAbsolutePath(),
-                "--" + CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, altHistTruthFile.getAbsolutePath()),
+                "-O", unscatteredDir.getAbsolutePath() + "/"),
                 CollectF1R2Counts.class.getSimpleName());
 
 
@@ -49,19 +43,35 @@ public class LearnReadOrientationModelUnitTest extends CommandLineProgramTest {
                     "-R", b37_reference_20_21,
                     "-I", ReadOrientationModelIntegrationTest.hapmapBamSnippet,
                     "-L", intervals[i].getAbsolutePath(),
-                    "--" + CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, altTableDir.getAbsolutePath() + "/" + i + ".tsv",
-                    "--" + CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, refMetricsDir.getAbsolutePath() + "/" + i + ".metrics",
-                    "--" + CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, altMetricsDir.getAbsolutePath() + "/" + i + ".metrics"),
+                    "-O", scatteredDir.getAbsolutePath() + "/scatter_" + i),
                     CollectF1R2Counts.class.getSimpleName());
         }
 
-        final List<Histogram<Integer>> ref = LearnReadOrientationModel.sumHistogramsFromFiles(Arrays.asList(refMetricsDir.listFiles()), true);
-        final List<Histogram<Integer>> alt = LearnReadOrientationModel.sumHistogramsFromFiles(Arrays.asList(altMetricsDir.listFiles()), false);
-        final List<AltSiteRecord> altSites = LearnReadOrientationModel.gatherAltSiteRecords(Arrays.asList(altTableDir.listFiles())).getRight();
+        final List<File> scatteredRefMetricsFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.REF_HIST_EXTENSION)).collect(Collectors.toList());
 
-        final List<Histogram<Integer>> refTruth = LearnReadOrientationModel.readMetricsFile(refHistTruthFile).getAllHistograms();
-        final List<Histogram<Integer>> altTruth = LearnReadOrientationModel.readMetricsFile(altHistTruthFile).getAllHistograms();
-        final List<AltSiteRecord> altSitesTruth = AltSiteRecord.readAltSiteRecords(altTableTruthFile.toPath()).getRight();
+        final List<File> scatteredAltMetricsFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_HIST_EXTENSION)).collect(Collectors.toList());
+
+        final List<File> scatteredAltTableFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_TABLE_EXTENSION)).collect(Collectors.toList());
+
+        final List<Histogram<Integer>> ref = LearnReadOrientationModel.sumHistogramsFromFiles(scatteredRefMetricsFiles, true);
+        final List<Histogram<Integer>> alt = LearnReadOrientationModel.sumHistogramsFromFiles(scatteredAltMetricsFiles, false);
+        final List<AltSiteRecord> altSites = LearnReadOrientationModel.gatherAltSiteRecords(scatteredAltTableFiles).getRight();
+
+        final File refHistUnscattered = Arrays.stream(unscatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.REF_HIST_EXTENSION)).findFirst().get();
+
+        final File altHistUnscattered = Arrays.stream(unscatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_HIST_EXTENSION)).findFirst().get();
+
+        final File altTableUnscattered = Arrays.stream(unscatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_TABLE_EXTENSION)).findFirst().get();
+
+        final List<Histogram<Integer>> refTruth = LearnReadOrientationModel.readMetricsFile(refHistUnscattered).getAllHistograms();
+        final List<Histogram<Integer>> altTruth = LearnReadOrientationModel.readMetricsFile(altHistUnscattered).getAllHistograms();
+        final List<AltSiteRecord> altSitesTruth = AltSiteRecord.readAltSiteRecords(altTableUnscattered.toPath()).getRight();
 
 
         for (Histogram<Integer> truth : refTruth){

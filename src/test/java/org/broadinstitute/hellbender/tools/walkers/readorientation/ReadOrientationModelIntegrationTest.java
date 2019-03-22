@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest {
@@ -40,9 +41,7 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
      */
     @Test(dataProvider = "scatterCounts")
     public void testOnRealBam(final int scatterCount) throws IOException {
-        final File refMetricsDir = createTempDir("rh");
-        final File altMetricsDir = createTempDir("ah");
-        final File altTableDir = createTempDir("at");
+        final File scatteredDir = createTempDir("scattered");
 
         // Step 1: SplitIntervals
         final File intervalDir = createTempDir("intervals");
@@ -61,13 +60,16 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
                     "-R", b37_reference_20_21,
                     "-I", hapmapBamSnippet,
                     "-L", intervals[i].getAbsolutePath(),
-                    "--" + CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, altTableDir.getAbsolutePath() + "/" + i + ".tsv",
-                    "--" + CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, refMetricsDir.getAbsolutePath() + "/" + i + ".metrics",
-                    "--" + CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, altMetricsDir.getAbsolutePath() + "/" + i + ".metrics"),
+                    "-O", scatteredDir.getAbsolutePath() + "/scatter_" + i),
                     CollectF1R2Counts.class.getSimpleName());
 
+            final int iFinal = i;
+            final File refHist = Arrays.stream(scatteredDir.listFiles())
+                    .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.REF_HIST_EXTENSION))
+                    .filter(file -> file.getAbsolutePath().contains("scatter_" + iFinal ))
+                    .findFirst().get();
             // Ensure that we print every bin, even when the count is 0
-            final int lineCount = (int) Files.lines(Paths.get(refMetricsDir.getAbsolutePath() + "/" + i + ".metrics")).filter(l -> l.matches("^[0-9].+")).count();
+            final int lineCount = (int) Files.lines(Paths.get(refHist.getAbsolutePath())).filter(l -> l.matches("^[0-9].+")).count();
             Assert.assertEquals(lineCount, F1R2FilterConstants.DEFAULT_MAX_DEPTH);
         }
 
@@ -75,15 +77,22 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
         final File priorTable = createTempFile("prior", ".tsv");
         final ArgumentsBuilder args = new ArgumentsBuilder();
         args.addArgument(StandardArgumentDefinitions.OUTPUT_LONG_NAME, priorTable.getAbsolutePath());
-        final File[] refMetricsFiles = refMetricsDir.listFiles();
-        Arrays.stream(refMetricsFiles).forEach(f ->
-                args.addArgument(CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, f.getAbsolutePath()));
-        final File[] altMetricsFiles = altMetricsDir.listFiles();
-        Arrays.stream(altMetricsFiles).forEach(f ->
-                args.addArgument(CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, f.getAbsolutePath()));
-        final File[] altTableFiles = altTableDir.listFiles();
-        Arrays.stream(altTableFiles).forEach(f ->
-                args.addArgument(CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, f.getAbsolutePath()));
+
+        final List<File> refMetricsFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.REF_HIST_EXTENSION)).collect(Collectors.toList());
+
+        final List<File> altMetricsFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_HIST_EXTENSION)).collect(Collectors.toList());
+
+        final List<File> altTableFiles = Arrays.stream(scatteredDir.listFiles())
+                .filter(file -> file.getAbsolutePath().endsWith(F1R2CountsCollector.ALT_TABLE_EXTENSION)).collect(Collectors.toList());
+
+        refMetricsFiles.forEach(f ->
+                args.addArgument(CollectF1R2CountsArgumentCollection.REF_SITE_METRICS_LONG_NAME, f.getAbsolutePath()));
+        altMetricsFiles.forEach(f ->
+                args.addArgument(CollectF1R2CountsArgumentCollection.ALT_DEPTH1_HISTOGRAM_LONG_NAME, f.getAbsolutePath()));
+        altTableFiles.forEach(f ->
+                args.addArgument(CollectF1R2CountsArgumentCollection.ALT_DATA_TABLE_LONG_NAME, f.getAbsolutePath()));
         runCommandLine(args.getArgsList(), LearnReadOrientationModel.class.getSimpleName());
 
         final ArtifactPriorCollection artifactPriorCollection = ArtifactPriorCollection.readArtifactPriors(priorTable);
@@ -97,7 +106,6 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
                 Arrays.asList(
                     "-I", hapmapBamSnippet,
                     "-R", b37_reference_20_21,
-                    "--" + M2FiltersArgumentCollection.ARTIFACT_PRIOR_TABLE_NAME, priorTable.getAbsolutePath(),
                     "-O", unfilteredVcf.getAbsolutePath(),
                     "-bamout", bamout.getAbsolutePath()),
                 Mutect2.class.getSimpleName()));
@@ -106,6 +114,7 @@ public class ReadOrientationModelIntegrationTest extends CommandLineProgramTest 
                 Arrays.asList(
                         "-V", unfilteredVcf.getAbsolutePath(),
                         "-R", b37_reference_20_21,
+                        "--" + M2FiltersArgumentCollection.ARTIFACT_PRIOR_TABLE_NAME, priorTable.getAbsolutePath(),
                         "-O", filteredVcf.getAbsolutePath()),
                 FilterMutectCalls.class.getSimpleName()));
 

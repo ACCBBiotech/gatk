@@ -18,10 +18,8 @@ import org.broadinstitute.hellbender.utils.Nucleotide;
 import org.broadinstitute.hellbender.utils.Utils;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.broadinstitute.hellbender.utils.io.IOUtils;
 
 /**
  * Learn the prior probability of read orientation artifact from the output of {@link CollectF1R2Counts}
@@ -49,20 +47,20 @@ public class LearnReadOrientationModel extends CommandLineProgram {
     public static final String MAX_EM_ITERATIONS_LONG_NAME = "num-em-iterations";
     public static final String MAX_DEPTH_LONG_NAME = "max-depth";
 
-    @Argument(fullName = CollectF1R2Counts.REF_SITE_METRICS_LONG_NAME, doc = "histograms of depths over ref sites for each reference context")
+    @Argument(fullName = CollectF1R2CountsArgumentCollection.REF_SITE_METRICS_LONG_NAME, doc = "histograms of depths over ref sites for each reference context")
     private List<File> refHistogramFiles;
 
-    @Argument(fullName = CollectF1R2Counts.ALT_DATA_TABLE_LONG_NAME, doc = "a table of F1R2 and depth counts")
+    @Argument(fullName = CollectF1R2CountsArgumentCollection.ALT_DATA_TABLE_LONG_NAME, doc = "a table of F1R2 and depth counts")
     private List<File> altDataTables;
 
-    @Argument(fullName = CollectF1R2Counts.ALT_DEPTH1_HISTOGRAM_LONG_NAME, doc = "histograms of depth 1 alt sites", optional = true)
+    @Argument(fullName = CollectF1R2CountsArgumentCollection.ALT_DEPTH1_HISTOGRAM_LONG_NAME, doc = "histograms of depth 1 alt sites", optional = true)
     private List<File> altHistogramFiles = null;
 
     @Argument(fullName = StandardArgumentDefinitions.OUTPUT_LONG_NAME, shortName = StandardArgumentDefinitions.OUTPUT_SHORT_NAME, doc = "table of artifact priors")
     private File output;
 
     @Argument(fullName = EM_CONVERGENCE_THRESHOLD_LONG_NAME, doc = "Stop the EM when the distance between parameters between iterations falls below this value", optional = true)
-    private double converagenceThreshold = DEFAULT_CONVERGENCE_THRESHOLD;
+    private double convergenceThreshold = DEFAULT_CONVERGENCE_THRESHOLD;
 
     @Argument(fullName = MAX_EM_ITERATIONS_LONG_NAME, doc = "give up on EM after this many iterations", optional = true)
     private int maxEMIterations = DEFAULT_MAX_ITERATIONS;
@@ -137,7 +135,7 @@ public class LearnReadOrientationModel extends CommandLineProgram {
                     combinedRefHistograms,
                     combinedAltHistograms,
                     altDesignMatrix,
-                    converagenceThreshold,
+                    convergenceThreshold,
                     maxEMIterations,
                     maxDepth,
                     logger);
