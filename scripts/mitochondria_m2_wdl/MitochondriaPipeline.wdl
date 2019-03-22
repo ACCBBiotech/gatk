@@ -13,8 +13,6 @@ workflow MitochondriaPipeline {
   File wgs_aligned_input_bam_or_cram
   Int? autosomal_coverage
 
-  File MT_with_numts_intervals
-
   # Using an older version of the default Mutect LOD cutoff. This value can be changed and is only useful at low depths
   # to catch sites that would not get caught by the LOD divided by depth filter.
   Float lod_cutoff = 6.3
@@ -65,10 +63,10 @@ workflow MitochondriaPipeline {
   call SubsetBam {
     input:
       input_bam = wgs_aligned_input_bam_or_cram,
-      interval_list = MT_with_numts_intervals,
       ref_fasta = ref_fasta,
       ref_fasta_index = ref_fasta_index,
       ref_dict = ref_dict,
+      gatk_override = gatk_override,
       preemptible_tries = preemptible_tries
   }
 
@@ -148,42 +146,43 @@ workflow MitochondriaPipeline {
 }
 
 task SubsetBam {
-  File input_bam
+  String input_bam
   String cram_basename = basename(input_bam, ".cram")
   String basename = basename(cram_basename, ".bam")
-  File interval_list
   File? ref_fasta
   File? ref_fasta_index
   File? ref_dict
 
+  File? gatk_override
+
   # runtime
   Int? preemptible_tries
-  Float bam_size = size(input_bam, "GB")
   Float ref_size = if defined(ref_fasta) then size(ref_fasta, "GB") + size(ref_fasta_index, "GB") + size(ref_dict, "GB") else 0
-  Int disk_size = ceil(bam_size * 2 + ref_size) + 20
-  Int final_preemptible_tries = if bam_size > 110.0 then 0 else select_first([preemptible_tries, 5])
+  Int disk_size = ceil(ref_size) + 20
 
   meta {
-    description: "Subsets a whole genome bam to just NuMT and Mitochondria reads and their mates"
+    description: "Subsets a whole genome bam to just Mitochondria reads"
   }
   parameter_meta {
-    interval_list: "Interval list with NuMTs and chrM"
     ref_fasta: "Reference is only required for cram input. If it is provided ref_fasta_index and ref_dict are also required."
   }
   command <<<
-    java -jar -Xmx2500m /usr/gitc/picard.jar FilterSamReads \
-      I=${input_bam} \
-      ${"R=" + ref_fasta} \
-      O=${basename}.bam \
-      FILTER=includePairedIntervals \
-      INTERVAL_LIST=${interval_list} \
-      CREATE_INDEX=true
+    set -e
+    export GATK_LOCAL_JAR=${default="/root/gatk.jar" gatk_override}
+
+    gatk PrintReads \
+      ${"-R " + ref_fasta} \
+      -L chrM \
+      --read-filter MateOnSameContigOrNoMappedMateReadFilter \
+      --read-filter MateUnmappedAndUnmappedReadFilter \
+      -I ${input_bam} \
+      -O ${basename}.bam
   >>>
   runtime {
     memory: "3 GB"
     disks: "local-disk " + disk_size + " HDD"
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
-    preemptible: final_preemptible_tries
+    docker: "us.gcr.io/broad-gatk/gatk:4.1.0.0"
+    preemptible: select_first([preemptible_tries, 5])
   }
   output {
     File output_bam = "${basename}.bam"
